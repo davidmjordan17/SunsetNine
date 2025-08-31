@@ -7,11 +7,9 @@ import { toast } from 'react-toastify'
 import axios from 'axios'
 
 const PlaceOrder = () => {
-
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [method, setMethod] = useState('stripe');
-
   const { navigate, backendUrl, token, cartItems, getCartAmount, delivery_fee, products, setCartItems } = useContext(ShopContext);
-
   const [formData, setFormData ] = useState({
     firstName:'',
     lastName:'',
@@ -33,12 +31,13 @@ const PlaceOrder = () => {
   }
 
   const onSubmitHandler = async (e) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+    if (!token) {
+      setShowLoginModal(true);
+      return;
+    }
     try {
-
-      let orderItems = []
-
+      let orderItems = [];
       for(const items in cartItems){
         for(const item in cartItems[items]){
           if (cartItems[items][item] > 0) {
@@ -51,15 +50,12 @@ const PlaceOrder = () => {
           }
         }
       }
-
       let orderData = {
         address: formData,
         items: orderItems,
         amount: getCartAmount() + delivery_fee
       }
-
       switch(method){
-        
         case 'stripe':
           const responseStripe = await axios.post(backendUrl + '/api/order/stripe', orderData, {headers:{token}})
           if (responseStripe.data.success) {
@@ -69,65 +65,68 @@ const PlaceOrder = () => {
             toast.error(responseStripe.data.message)
           }
           break;
-
         default:
           break;
       }
-      
-      
     } catch (error) {
-      
+      // handle error
     }
   }
   
 
   return (
-    <form onSubmit={onSubmitHandler} className='flex flex-col sm:flex-row justify-between gap-4 pt-5 sm:pt-14 min-h-[80vh] border-t'>
-
-       {/* Left Side */} 
-      <div className='flex flex-col gap-4 w-full sm:max-w-[480px]'>
-
-        <div className='text-xl sm:text-2xl my-3'>
-          <Title text1={'DELIVERY'} text2={'INFORMATION'}/>
+    <>
+      {/* Login Modal */}
+      {showLoginModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-lg p-8 max-w-sm w-full text-center relative">
+            <button onClick={()=>setShowLoginModal(false)} className="absolute top-2 right-2 text-gray-400 hover:text-black text-xl">&times;</button>
+            <h2 className="text-xl font-bold mb-2">Please log in or create an account</h2>
+            <p className="mb-6 text-gray-600">You must be signed in to checkout.</p>
+            <div className="flex flex-col gap-3">
+              <button onClick={()=>{setShowLoginModal(false); navigate('/login')}} className="bg-black text-white py-2 rounded hover:bg-gray-800 transition">Log In</button>
+              <button onClick={()=>{setShowLoginModal(false); navigate('/login')}} className="border border-black py-2 rounded hover:bg-gray-100 transition">Create Account</button>
+            </div>
+          </div>
         </div>
-
-        <div className='flex gap-3'>
-          <input required onChange={onChangeHandler} name='firstName' value={formData.firstName} type="text" placeholder='First Name' className='border border-gray-200 rounded py-1.5 px-3.5 w-full'/>
-          <input required onChange={onChangeHandler} name='lastName' value={formData.lastName} type="text" placeholder='Last Name' className='border border-gray-200 rounded py-1.5 px-3.5 w-full'/>
+      )}
+      <form onSubmit={onSubmitHandler} className='flex flex-col sm:flex-row justify-between gap-4 pt-5 sm:pt-14 min-h-[80vh] border-t'>
+        {/* Left Side */}
+        <div className='flex flex-col gap-4 w-full sm:max-w-[480px]'>
+          <div className='text-xl sm:text-2xl my-3'>
+            <Title text1={'DELIVERY'} text2={'INFORMATION'}/>
+          </div>
+          <div className='flex gap-3'>
+            <input required onChange={onChangeHandler} name='firstName' value={formData.firstName} type="text" placeholder='First Name' className='border border-gray-200 rounded py-1.5 px-3.5 w-full'/>
+            <input required onChange={onChangeHandler} name='lastName' value={formData.lastName} type="text" placeholder='Last Name' className='border border-gray-200 rounded py-1.5 px-3.5 w-full'/>
+          </div>
+          <input required onChange={onChangeHandler} name='email' value={formData.email} type="email" placeholder='Email Address' className='border border-gray-200 rounded py-1.5 px-3.5 w-full'/>
+          <input required onChange={onChangeHandler} name='street' value={formData.street} type="text" placeholder='Street' className='border border-gray-200 rounded py-1.5 px-3.5 w-full'/>
+          <input onChange={onChangeHandler} name='apt' value={formData.apt} type="text" placeholder='Apt #' className='border border-gray-200 rounded py-1.5 px-3.5 w-full'/>
+          <div className='flex gap-3'>
+            <input required onChange={onChangeHandler} name='city' value={formData.city} type="text" placeholder='City' className='border border-gray-200 rounded py-1.5 px-3.5 w-full'/>
+            <input required onChange={onChangeHandler} name='state' value={formData.state} type="text" placeholder='State' className='border border-gray-200 rounded py-1.5 px-3.5 w-full'/>
+          </div>
+          <div className='flex gap-3'>
+            <input required onChange={onChangeHandler} name='zipcode' value={formData.zipcode} type="number" placeholder='Zip Code' className='border border-gray-200 rounded py-1.5 px-3.5 w-full'/>
+            <input required onChange={onChangeHandler} name='country' value={formData.country} type="text" placeholder='Country' className='border border-gray-200 rounded py-1.5 px-3.5 w-full'/>
+          </div>
+          <input required onChange={onChangeHandler} name='phone' value={formData.phone} type="number" placeholder='Phone' className='border border-gray-200 rounded py-1.5 px-3.5 w-full'/>
         </div>
-        <input required onChange={onChangeHandler} name='email' value={formData.email} type="email" placeholder='Email Address' className='border border-gray-200 rounded py-1.5 px-3.5 w-full'/>
-        <input required onChange={onChangeHandler} name='street' value={formData.street} type="text" placeholder='Street' className='border border-gray-200 rounded py-1.5 px-3.5 w-full'/>
-        <input onChange={onChangeHandler} name='apt' value={formData.apt} type="text" placeholder='Apt #' className='border border-gray-200 rounded py-1.5 px-3.5 w-full'/>
-        <div className='flex gap-3'>
-          <input required onChange={onChangeHandler} name='city' value={formData.city} type="text" placeholder='City' className='border border-gray-200 rounded py-1.5 px-3.5 w-full'/>
-          <input required onChange={onChangeHandler} name='state' value={formData.state} type="text" placeholder='State' className='border border-gray-200 rounded py-1.5 px-3.5 w-full'/>
+        {/* Right Side */}
+        <div className='mt-8'>
+          <div className='mt-8 min-w-80'>
+            <CartTotal />
+          </div>
+          <div className='w-full items-center mt-12'>
+            <button type='submit' className='bg-black text-white px-16 py-3 text-md cursor-pointer flex items-center justify-center gap-3 mx-auto rounded-4xl'>
+              PLACE ORDER WITH 
+              <img src={assets.stripe_logo} className='h-5 -mt-1 -ml-1' alt="Stripe" />
+            </button>
+          </div>
         </div>
-        <div className='flex gap-3'>
-          <input required onChange={onChangeHandler} name='zipcode' value={formData.zipcode} type="number" placeholder='Zip Code' className='border border-gray-200 rounded py-1.5 px-3.5 w-full'/>
-          <input required onChange={onChangeHandler} name='country' value={formData.country} type="text" placeholder='Country' className='border border-gray-200 rounded py-1.5 px-3.5 w-full'/>
-        </div>
-        <input required onChange={onChangeHandler} name='phone' value={formData.phone} type="number" placeholder='Phone' className='border border-gray-200 rounded py-1.5 px-3.5 w-full'/>
-      </div>
-
-
-      {/* Right Side */}
-      <div className='mt-8'>
-
-        <div className='mt-8 min-w-80'>
-
-          <CartTotal />
-
-        </div>
-
-        <div className='w-full items-center mt-12'>
-          <button type='submit' className='bg-black text-white px-16 py-3 text-md cursor-pointer flex items-center justify-center gap-3 mx-auto rounded-4xl'>
-            PLACE ORDER WITH 
-            <img src={assets.stripe_logo} className='h-5 -mt-1 -ml-1' alt="Stripe" />
-          </button>
-        </div>
-
-      </div>
-    </form>
+      </form>
+    </>
   )
 }
 
